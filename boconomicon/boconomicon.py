@@ -1,15 +1,19 @@
 from redbot.core import commands, checks, Config
+from redbot.core.bot import Red
 import discord
 
 
 class Boconomicon(commands.Cog):
     """Boconomicon"""
 
-    def __init__(self):
+    def __init__(self, bot: Red):
+        self.bot = bot
         # Default config for all guilds with random identifier
         self.config = Config.get_conf(self, identifier=9988776655)
         default_guild = {
             "enabled": False,
+            "chance": 20,
+            "length": 5,
             "triggers": [
                 "ca",
                 "ce",
@@ -36,12 +40,51 @@ class Boconomicon(commands.Cog):
         if self.boconomicon_cache is not None:
             self.boconomicon_cache.clear()
 
+    @commands.command()
+    @commands.guild_only()
+    @checks.admin_or_permissions(manage_guild=True)
+    async def boconomicon(self, ctx: commands.Context):
+        """Toggles Boconomicon"""
+        msg = ""
+        if await self.config.guild(ctx.guild).enabled() == False:
+            await self.config.guild(ctx.guild).enabled.set(True)
+            msg = "You reach out and open the Boconomicon, releasing an unspeakable horror into the world."
+        else:
+            await self.config.guild(ctx.guild).enabled.set(False)
+            msg = "You quickly shut the Boconomicon, sealing away the lingering, dark spirits inside."
+        embed = discord.Embed(color=await ctx.embed_color(), title="Boconomicon")
+        embed.description = msg
+        embed.set_thumbnail(
+            url="https://media.discordapp.net/attachments/169189973805891584/778386157633404938/boconomicon.png?width=460&height=460")
+        await ctx.send(embed=embed)
+        await self.generate_cache()
+
     @commands.group(aliases=["bset"])
     @commands.guild_only()
     @checks.admin_or_permissions(manage_guild=True)
     async def boconomiconset(self, ctx: commands.Context):
         """Adjust Boconomicon settings"""
         pass
+
+    @boconomiconset.command(name="chance")
+    async def boconomiconset_chance(self, ctx: commands.Context, chance: int):
+        """Sets the chance of Boconomicon replacing a word. The chance will be 1/`chance`."""
+        if (chance <= 0):
+            await ctx.send("Chance must be a positive.")
+        else:
+            await self.config.guild(ctx.guild).chance.set(chance)
+            await ctx.send("Chance now set to 1/{0}".format(chance))
+        await self.generate_cache()
+
+    @boconomiconset.command(name="length")
+    async def boconomiconset_length(self, ctx: commands.Context, length: int):
+        """Sets the minimum length required for Boconomicon to replace a word."""
+        if (length < 2):
+            await ctx.send("Length must be greater than 2.")
+        else:
+            await self.config.guild(ctx.guild).length.set(length)
+            await ctx.send("Minimum length now set to {0}".format(length))
+        await self.generate_cache()
 
     @boconomiconset.group(name="trigger", alias=["triggers"])
     async def boconomiconset_trigger(self, ctx: commands.Context):
