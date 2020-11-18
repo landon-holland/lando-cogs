@@ -1,6 +1,7 @@
 from redbot.core import commands, checks, Config
 from redbot.core.bot import Red
 import discord
+from random import random
 
 
 class Boconomicon(commands.Cog):
@@ -28,7 +29,7 @@ class Boconomicon(commands.Cog):
                 "necronomicon": "boconomicon",
                 "economy": "boconomy",
                 "vocabulary": "bocabulary",
-                "algorithm": "boalgorithm"
+                "algorithm": "boalgorithm",
             }
         }
         self.config.register_guild(**default_guild)
@@ -42,7 +43,7 @@ class Boconomicon(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_guild=True)
+    @checks.mod()
     async def boconomicon(self, ctx: commands.Context):
         """Toggles Boconomicon"""
         msg = ""
@@ -61,7 +62,7 @@ class Boconomicon(commands.Cog):
 
     @commands.group(aliases=["bset"])
     @commands.guild_only()
-    @checks.admin_or_permissions(manage_guild=True)
+    @checks.mod()
     async def boconomiconset(self, ctx: commands.Context):
         """Adjust Boconomicon settings"""
         pass
@@ -147,3 +148,30 @@ class Boconomicon(commands.Cog):
             except KeyError:
                 await ctx.send("Override `{0}` is already not an override.".format(keyword))
         await self.generate_cache()
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        data = self.boconomicon_cache.get(message.guild.id)
+        if not data["enabled"]:
+            return
+        if message.author.bot:
+            return
+        if message.content.startswith(tuple(await self.bot.get_valid_prefixes())):
+            return
+        if (random() >= 1 / data["chance"]):
+            return
+        words = message.content.split()
+        msg = ""
+        changes = False
+        for word in words:
+            if word in data["overrides"]:
+                msg += data["overrides"][word]
+                changes = True
+            elif word.lower().startswith(tuple(data["triggers"])):
+                msg += "bo" + word
+                changes = True
+            else:
+                msg += word
+            msg += " "
+        if changes:
+            await message.channel.send(msg)
