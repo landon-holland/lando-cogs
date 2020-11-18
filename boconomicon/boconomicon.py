@@ -51,13 +51,16 @@ class Boconomicon(commands.Cog):
     async def boconomicon(self, ctx: commands.Context):
         """Toggles Boconomicon"""
         msg = ""
+        embedtitle = ""
         if await self.config.guild(ctx.guild).enabled() == False:
             await self.config.guild(ctx.guild).enabled.set(True)
+            embedtitle = "Boconomicon enabled"
             msg = "You reach out and open the Boconomicon, releasing an unspeakable horror into the world."
         else:
             await self.config.guild(ctx.guild).enabled.set(False)
+            embedtitle = "Boconomicon disabled"
             msg = "You quickly shut the Boconomicon, sealing away the lingering, dark spirits inside."
-        embed = discord.Embed(color=await ctx.embed_color(), title="Boconomicon")
+        embed = discord.Embed(color=await ctx.embed_color(), title=embedtitle)
         embed.description = msg
         embed.set_thumbnail(
             url="https://media.discordapp.net/attachments/169189973805891584/778386157633404938/boconomicon.png?width=460&height=460")
@@ -157,6 +160,9 @@ class Boconomicon(commands.Cog):
     async def on_message(self, message: discord.Message) -> None:
         data = self.boconomicon_cache.get(message.guild.id)
         if not data["enabled"]:
+            return
+        if len(message.content) < data["length"]:
+            print("pee")
             return
         if message.author.bot:
             return
