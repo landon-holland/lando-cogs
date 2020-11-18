@@ -7,6 +7,10 @@ from random import random
 class Boconomicon(commands.Cog):
     """Boconomicon"""
 
+    async def red_delete_data_for_user(self, **kwargs):
+        """Nothing to delete"""
+        return
+
     def __init__(self, bot: Red):
         self.bot = bot
         # Default config for all guilds with random identifier

@@ -1,0 +1,9 @@
+{
+    "author": [
+        "lando (lando#1649)"
+    ],
+    "install_msg": "Thanks for using lando-cogs. Please contact me with issues cause I kinda suck at coding.",
+    "name": "lando-cogs",
+    "short": "Cogs made by lando.",
+    "description": "Cogs made by lando in his free time, mainly for use in landoserver."
+}
