@@ -126,3 +126,7 @@ dmypy.json
 
 # VS Code
 .vscode
+
+# more pycache
+boconomicon/__pycache__
+quotes/__pycache__

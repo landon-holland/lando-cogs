@@ -176,7 +176,10 @@ class Boconomicon(commands.Cog):
         for word in words:
             if word in data["overrides"]:
                 msg += data["overrides"][word]
-                changes = True
+                if word == data["overrides"][word]:
+                    changes = False
+                else:
+                    changes = True
             elif word.lower().startswith(tuple(data["triggers"])):
                 msg += "bo" + word
                 changes = True
