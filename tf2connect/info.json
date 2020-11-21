@@ -1,0 +1,9 @@
+{
+    "author": [
+        "lando (lando#1649)"
+    ],
+    "description": "Cog that detects TF2 connect info messages and sends a clickable version.",
+    "install_msg": "Use `!tf2connect` to enable this cog.",
+    "short": "TF2 connect info",
+    "end_user_data_statement": "This bot does not store any data or metadata about users."
+}
