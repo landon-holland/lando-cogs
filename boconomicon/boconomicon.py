@@ -162,7 +162,6 @@ class Boconomicon(commands.Cog):
         if not data["enabled"]:
             return
         if len(message.content) < data["length"]:
-            print("pee")
             return
         if message.author.bot:
             return
