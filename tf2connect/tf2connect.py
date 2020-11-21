@@ -45,6 +45,6 @@ class TF2Connect(commands.Cog):
             ip = msg[8:msg.index(';')]
             password = msg[msg.index('password') + 9:]
             embed = discord.Embed(color=0xcf7336, title="TF2Connect")
-            embed.description = "steam://connect/{0};password/{1}".format(
+            embed.description = "steam://connect/{0}/{1}".format(
                 ip, password)
             await message.channel.send(embed=embed)
