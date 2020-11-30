@@ -1,0 +1,9 @@
+{
+    "author": [
+        "lando (lando#1649)"
+    ],
+    "description": "Cog that manages quotes in a server.",
+    "install_msg": "Thanks for installing.",
+    "short": "Quotes in servers.",
+    "end_user_data_statement": "This cog stores Discord usernames for quotes."
+}
