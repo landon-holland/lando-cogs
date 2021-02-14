@@ -23,6 +23,7 @@ class Avalon(commands.Cog):
         return embed
 
     async def checkPM(self, message):
+        # TODO fix this
         # Checks if we're talking in PM, and if not - outputs an error
         if isinstance(message.channel, discord.abc.PrivateChannel):
             # PM
@@ -70,6 +71,7 @@ class Avalon(commands.Cog):
 
         self.players.append(ctx.message.author.id)
         # TODO PM
+        # TODO PM everyone who is already in the game
         await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Joined', 'You have joined the game. Check PMs!'))
 
     @avalon.command()
@@ -98,17 +100,29 @@ class Avalon(commands.Cog):
         elif self.gameStatus == 2:
             await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You can not leave an in progress game.'))
             return
+        self.players.remove(ctx.author.id)
+        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Avalon', 'You have successfully left the game.'))
 
     @avalon.command()
     async def ready(self, ctx):
         """Ready up for Avalon game"""
         if not await self.checkPM(ctx.message):
             return
-        # TODO
+        if ctx.author.id in self.readyPlayers:
+            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You are already ready.'))
+            return
+        self.readyPlayers.append(ctx.message.author.id)
+        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Joined', 'You have readied up!'))
+
+        # TODO PM everyone that you readied up
 
     @avalon.command()
     async def unready(self, ctx):
         """Unready for Avalon game"""
         if not await self.checkPM(ctx.message):
             return
-        # TODO
+        if ctx.author.id not in self.readyPlayers:
+            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You aren\'t ready.'))
+            return
+        self.readyPlayers.remove(ctx.author.id)
+        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Avalon', 'You have unreadied.'))
