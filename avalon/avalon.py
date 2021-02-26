@@ -1,5 +1,6 @@
 from redbot.core import commands, checks
 import discord
+import random
 
 
 class Avalon(commands.Cog):
@@ -9,12 +10,13 @@ class Avalon(commands.Cog):
         self.bot = bot
         self.players = []
         self.ready_players = []
-        self.min_players = 5
+        self.min_players = 2
         self.max_players = 10
         self.player_roles = {}
         self.quest_num = 1
         self.game_status = 0  # 0: No Game. 1: Intermission. 2: In game
         self.roles = {
+            2: {"Loyal Servant of Arthur": 1, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 0},
             5: {"Loyal Servant of Arthur": 1, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 0},
             6: {"Loyal Servant of Arthur": 2, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 0},
             7: {"Loyal Servant of Arthur": 2, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 1},
@@ -32,7 +34,6 @@ class Avalon(commands.Cog):
         return embed
 
     async def check_pm(self, message):
-        # TODO fix this
         # Checks if we're talking in PM, and if not - outputs an error
         if isinstance(message.channel, discord.abc.PrivateChannel):
             # PM
@@ -59,7 +60,12 @@ class Avalon(commands.Cog):
             return name
         return None
 
-    # TODO clear all settings function
+    def clear_variables(self):
+        self.players = []
+        self.ready_players = []
+        self.player_roles = {}
+        self.quest_num = 1
+        self.game_status = 0
 
     # Guild commands
     @commands.group()
@@ -71,11 +77,14 @@ class Avalon(commands.Cog):
     @commands.guild_only()
     async def start(self, ctx):
         """Start game of Avalon"""
+        if self.game_status != 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'Game already in progress'))
+            return
+
+        self.clear_variables()
         self.players = [ctx.author]
-        self.ready_players = []
-        self.player_roles = {}
-        self.quest_num = 1
         self.game_status = 1
+        
         await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Starting...', 'Starting game of Avalon in PMs...'))
         await ctx.author.send("{0} has joined the game.".format(self.displayname(ctx.author)))
 
@@ -111,6 +120,8 @@ class Avalon(commands.Cog):
             return
         self.game_status = 0
         await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Stopped', 'Current game of Avalon stopped.'))
+        for player in self.players:
+            await player.send(embed=self.make_embed('Avalon', 0x77dd77, 'Stopped', 'This game has been cancelled.')
 
     # PM commands
     @avalon.command()
@@ -148,17 +159,14 @@ class Avalon(commands.Cog):
                 await player.send("{0} has readied up!".format(self.displayname(ctx.author)))
 
         if set(self.ready_players) == set(self.players):
-            print(self.players)
-            print(len(self.players))
-            if len(self.players) < 5:
+            if len(self.players) < self.min_players:
                 for player in self.players:
                     await player.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You must have 5 players to start the game.'))
             else:
-                task = self.bot.loop.create_task(self.game_loop())
+                self.assign_roles()
+                #self.bot.loop.create_task(self.game_loop())
 
-        # TODO PM everyone that you readied up
-
-    @ avalon.command()
+    @avalon.command()
     async def unready(self, ctx):
         """Unready for Avalon game"""
         if not await self.check_pm(ctx.message):
@@ -175,3 +183,14 @@ class Avalon(commands.Cog):
     async def game_loop(self):
         while True:
             break
+    
+    def assign_roles(self):
+        roles_for_this_game = []
+        for role, number in self.roles[len(self.players)].items():
+            for n in range(number):
+                roles_for_this_game.append(role)
+
+        for player in self.players:
+            self.player_roles.update({player:roles_for_this_game.pop(random.randrange(len(roles_for_this_game)))})
+        
+        print(self.player_roles)
