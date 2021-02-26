@@ -4,4 +4,5 @@ __red_end_user_data_statement__ = "This bot does not store any data or metadata 
 
 
 async def setup(bot):
-    bot.add_cog(Avalon())
+    cog = Avalon(bot)
+    bot.add_cog(cog)

@@ -5,16 +5,25 @@ import discord
 class Avalon(commands.Cog):
     """Avalon"""
 
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         self.players = []
-        self.readyPlayers = []
-        self.minPlayers = 5
-        self.maxPlayers = 10
-        self.playerRoles = {}
-        self.questNum = 1
-        self.gameStatus = 0  # 0: No Game. 1: Intermission. 2: In game
+        self.ready_players = []
+        self.min_players = 5
+        self.max_players = 10
+        self.player_roles = {}
+        self.quest_num = 1
+        self.game_status = 0  # 0: No Game. 1: Intermission. 2: In game
+        self.roles = {
+            5: {"Loyal Servant of Arthur": 1, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 0},
+            6: {"Loyal Servant of Arthur": 2, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 0},
+            7: {"Loyal Servant of Arthur": 2, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 1},
+            8: {"Loyal Servant of Arthur": 3, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 1},
+            9: {"Loyal Servant of Arthur": 4, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 1},
+            10: {"Loyal Servant of Arthur": 4, "Merlin": 1, "Morgana": 1, "Mordred": 1, "Assassin": 1, "Minion of Mordred": 2}
+        }
 
-    def makeEmbed(self, title, color, name, value):
+    def make_embed(self, title, color, name, value):
         embed = discord.Embed(title=title, color=color)
         embed.add_field(name=name,
                         value=value,
@@ -22,7 +31,7 @@ class Avalon(commands.Cog):
 
         return embed
 
-    async def checkPM(self, message):
+    async def check_pm(self, message):
         # TODO fix this
         # Checks if we're talking in PM, and if not - outputs an error
         if isinstance(message.channel, discord.abc.PrivateChannel):
@@ -30,12 +39,30 @@ class Avalon(commands.Cog):
             return True
         else:
             # Not in PM
-            await message.channel.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'This command must be used in PMs.'))
+            await message.channel.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'This command must be used in PMs.'))
             return False
+
+    def displayname(self, member: discord.Member):
+        # A helper function to return the member's display name
+        nick = name = None
+        try:
+            nick = member.nick
+        except AttributeError:
+            pass
+        try:
+            name = member.name
+        except AttributeError:
+            pass
+        if nick:
+            return nick
+        if name:
+            return name
+        return None
+
+    # TODO clear all settings function
 
     # Guild commands
     @commands.group()
-    @commands.guild_only()
     async def avalon(self, ctx):
         """Main Avalon command"""
         pass
@@ -44,85 +71,107 @@ class Avalon(commands.Cog):
     @commands.guild_only()
     async def start(self, ctx):
         """Start game of Avalon"""
-        self.players = [ctx.message.author.id]
-        self.readyPlayers = []
-        self.playerRoles = {}
-        self.questNum = 1
-        self.gameStatus = 1
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Starting...', 'Starting game of Avalon in PMs...'))
-        # TODO PM
+        self.players = [ctx.author]
+        self.ready_players = []
+        self.player_roles = {}
+        self.quest_num = 1
+        self.game_status = 1
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Starting...', 'Starting game of Avalon in PMs...'))
+        await ctx.author.send("{0} has joined the game.".format(self.displayname(ctx.author)))
 
     @avalon.command()
     @commands.guild_only()
     async def join(self, ctx):
         """Join existing game of Avalon"""
-        if len(self.players) > self.maxPlayers:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'Already 10 players in game.'))
+        if len(self.players) > self.max_players:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'Already 10 players in game.'))
             return
-        if self.gameStatus == 0:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You must start a game first.'))
+        if self.game_status == 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You must start a game first.'))
             return
-        elif self.gameStatus == 2:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'Game is already in progress.'))
+        elif self.game_status == 2:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'Game is already in progress.'))
             return
-        if ctx.message.author.id in self.players:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You are already in the game.'))
+        if ctx.author in self.players:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You are already in the game.'))
             return
 
-        self.players.append(ctx.message.author.id)
-        # TODO PM
-        # TODO PM everyone who is already in the game
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Joined', 'You have joined the game. Check PMs!'))
+        self.players.append(ctx.author)
+        for player in self.players:
+            await player.send("{0} has joined the game.".format(self.displayname(ctx.author)))
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Joined', 'You have joined the game. Check PMs!'))
 
     @avalon.command()
     @commands.guild_only()
     @checks.mod()
     async def stop(self, ctx):
         """Stop game of Avalon"""
-        if self.gameStatus == 0:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'No game in progress.'))
+        if self.game_status == 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'No game in progress.'))
             return
-        self.gameStatus = 0
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Stopped', 'Current game of Avalon stopped'))
+        self.game_status = 0
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Stopped', 'Current game of Avalon stopped.'))
 
     # PM commands
     @avalon.command()
     async def leave(self, ctx):
         """Leave game of Avalon during intermission"""
-        if not await self.checkPM(ctx.message):
+        if not await self.check_pm(ctx.message):
             return
-        if ctx.message.author.id not in self.players:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You are not in a game..'))
+        if ctx.author not in self.players:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You are not in a game..'))
             return
-        if self.gameStatus == 0:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'No game in progress.'))
+        if self.game_status == 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'No game in progress.'))
             return
-        elif self.gameStatus == 2:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You can not leave an in progress game.'))
+        elif self.game_status == 2:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You can not leave an in progress game.'))
             return
-        self.players.remove(ctx.author.id)
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Avalon', 'You have successfully left the game.'))
+        self.players.remove(ctx.author)
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Avalon', 'You have successfully left the game.'))
 
     @avalon.command()
     async def ready(self, ctx):
         """Ready up for Avalon game"""
-        if not await self.checkPM(ctx.message):
+        if not await self.check_pm(ctx.message):
             return
-        if ctx.author.id in self.readyPlayers:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You are already ready.'))
+        if self.game_status == 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'There is no active game. Start a game by running `[p]avalon start`.'))
             return
-        self.readyPlayers.append(ctx.message.author.id)
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Joined', 'You have readied up!'))
+        if ctx.author.id in self.ready_players:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You are already ready.'))
+            return
+        self.ready_players.append(ctx.author)
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Readied', 'You have readied up!'))
+        for player in self.players:
+            if player != ctx.author:
+                await player.send("{0} has readied up!".format(self.displayname(ctx.author)))
+
+        if set(self.ready_players) == set(self.players):
+            print(self.players)
+            print(len(self.players))
+            if len(self.players) < 5:
+                for player in self.players:
+                    await player.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You must have 5 players to start the game.'))
+            else:
+                task = self.bot.loop.create_task(self.game_loop())
 
         # TODO PM everyone that you readied up
 
-    @avalon.command()
+    @ avalon.command()
     async def unready(self, ctx):
         """Unready for Avalon game"""
-        if not await self.checkPM(ctx.message):
+        if not await self.check_pm(ctx.message):
             return
-        if ctx.author.id not in self.readyPlayers:
-            await ctx.send(embed=self.makeEmbed('Avalon', 0xff4055, 'Error', 'You aren\'t ready.'))
+        if self.game_status == 0:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'There is no active game. Start a game by running `[p]avalon start`.'))
             return
-        self.readyPlayers.remove(ctx.author.id)
-        await ctx.send(embed=self.makeEmbed('Avalon', 0x77dd77, 'Avalon', 'You have unreadied.'))
+        if ctx.author.id not in self.ready_players:
+            await ctx.send(embed=self.make_embed('Avalon', 0xff4055, 'Error', 'You aren\'t ready.'))
+            return
+        self.ready_players.remove(ctx.author)
+        await ctx.send(embed=self.make_embed('Avalon', 0x77dd77, 'Unreadied', 'You have unreadied.'))
+
+    async def game_loop(self):
+        while True:
+            break
